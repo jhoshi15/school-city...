@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School City – Chronicles of Chronos | I.E. Juan Pablo Viscardo y Guzmán</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#05070b',
+                            card: '#0f172a',
+                            border: '#1e293b',
+                            primary: '#06b6d4',
+                            secondary: '#6366f1',
+                            accent: '#f43f5e',
+                            success: '#10b981',
+                            warning: '#f59e0b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 25px rgba(6, 182, 212, 0.25), inset 0 0 15px rgba(6, 182, 212, 0.1); }
+            50% { box-shadow: 0 0 50px rgba(6, 182, 212, 0.5), inset 0 0 25px rgba(6, 182, 212, 0.2); }
+        }
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .glow-card {
+            animation: pulseGlow 4s infinite ease-in-out;
+        }
+        .floating {
+            animation: floatAnim 4s infinite ease-in-out;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .cyber-gradient {
+            background: linear-gradient(135deg, #06b6d4 0%, #6366f1 50%, #a855f7 100%);
+        }
+        .glass-panel {
+            background: rgba(11, 18, 32, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #05070b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="bg-cyber-dark text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-white custom-scrollbar relative overflow-x-hidden m-0 p-0">
+
+    <canvas id="particle-canvas"></canvas>
+
+    <div id="app" class="relative z-10 flex-1 flex flex-col max-w-7xl mx-auto w-full p-4 md:p-6 gap-6">
+
+        <!-- HEADER HUD -->
+        <header id="main-header" class="hidden flex-col md:flex-row items-center justify-between glass-panel border border-cyber-border rounded-2xl p-4 gap-4 shadow-2xl fade-in">
+            <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl cyber-gradient flex items-center justify-center text-cyber-dark font-black text-2xl shadow-lg floating">
+                        <i class="fa-solid fa-city"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400">
+                            SCHOOL CITY
+                        </h1>
+                        <p class="text-[11px] text-slate-400 font-semibold">I.E. Juan Pablo Viscardo y Guzmán</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLAYER STATS -->
+            <div id="player-hud" class="flex flex-wrap items-center justify-center gap-3 md:gap-5 bg-cyber-dark/80 border border-cyber-border/80 px-4 py-2.5 rounded-xl shadow-inner w-full md:w-auto">
+                <div class="flex items-center gap-2">
+                    <div id="hud-avatar" class="w-9 h-9 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 font-bold text-sm shadow">
+                        🛡️
+                    </div>
+                    <div>
+                        <div id="hud-name" class="text-xs font-bold text-slate-200">Estudiante</div>
+                        <div id="hud-rank" class="text-[10px] text-cyan-400 font-semibold uppercase tracking-wider">Novato</div>
+                    </div>
+                </div>
+
+                <div class="h-6 w-px bg-cyber-border hidden sm:block"></div>
+
+                <div class="flex flex-col min-w-[120px]">
+                    <div class="flex justify-between text-[11px] font-semibold mb-1">
+                        <span class="text-indigo-300">Nivel <span id="hud-level">1</span></span>
+                        <span id="hud-xp-text" class="text-slate-400">0/100 XP</span>
+                    </div>
+                    <div class="w-full bg-cyber-border h-2 rounded-full overflow-hidden">
+                        <div id="hud-xp-bar" class="bg-gradient-to-r from-cyan-400 to-indigo-500 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg">
+                    <i class="fa-solid fa-coins text-amber-400 text-sm"></i>
+                    <span id="hud-coins" class="text-amber-300 font-bold text-sm">120</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/30 px-3 py-1 rounded-lg" title="Racha de días activos">
+                    <i class="fa-solid fa-fire text-rose-400 text-sm animate-pulse"></i>
+                    <span id="hud-streak" class="text-rose-300 font-bold text-sm">3 días</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col gap-6 justify-center">
+
+            <!-- PANTALLA DE INICIO (CINEMÁTICA Y LLAMATIVA) -->
+            <section id="view-start" class="flex-1 flex items-center justify-center py-6">
+                <div class="glass-panel border-2 border-cyan-500/40 rounded-3xl p-6 md:p-10 max-w-xl w-full text-center shadow-2xl relative overflow-hidden glow-card fade-in">
+                    <!-- Elementos decorativos de fondo -->
+                    <div class="absolute -top-16 -right-16 w-56 h-56 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -bottom-16 -left-16 w-56 h-56 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <!-- Insignia superior -->
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[11px] font-bold uppercase tracking-widest mb-4">
+                        <i class="fa-solid fa-shield-halved"></i> Edición Escolar Oficial
+                    </div>
+
+                    <div class="w-24 h-24 bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 border-2 border-cyan-400 rounded-3xl mx-auto flex items-center justify-center text-5xl mb-6 shadow-2xl shadow-cyan-500/30 floating">
+                        ⚡
+                    </div>
+
+                    <h2 class="text-3xl md:text-4xl font-black text-white mb-2 tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-200 to-indigo-300">
+                        Chronicles of Chronos
+                    </h2>
+                    <p class="text-xs md:text-sm text-slate-300 mb-8 leading-relaxed max-w-md mx-auto">
+                        Domina el tiempo, organiza tus tareas académicas y guía a tu mascota virtual <strong>Chronobook</strong> hacia la gloria en la I.E. <strong>Juan Pablo Viscardo y Guzmán</strong>.
+                    </p>
+
+                    <div class="space-y-4 text-left mb-8 bg-cyber-dark/60 p-5 rounded-2xl border border-cyber-border">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-2">
+                                <i class="fa-solid fa-user-pen mr-1"></i> Tu Nombre o Seudónimo Estudiantil
+                            </label>
+                            <input type="text" id="input-player-name" placeholder="Ej. Alex Viscardo" class="w-full bg-cyber-dark border border-cyber-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-400 transition text-white placeholder-slate-600 shadow-inner">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-cyan-300 mb-2">
+                                <i class="fa-solid fa-mask mr-1"></i> Elige tu Avatar Guardián
+                            </label>
+                            <div class="grid grid-cols-4 gap-3">
+                                <button type="button" onclick="selectAvatar('🛡️')" class="avatar-btn p-3 bg-cyber-dark border-2 border-cyan-400 rounded-xl text-2xl hover:scale-105 transition flex items-center justify-center bg-cyan-500/15 cursor-pointer shadow">🛡️</button>
+                                <button type="button" onclick="selectAvatar('⚡')" class="avatar-btn p-3 bg-cyber-dark border border-cyber-border rounded-xl text-2xl hover:scale-105 transition flex items-center justify-center cursor-pointer shadow">⚡</button>
+                                <button type="button" onclick="selectAvatar('🧠')" class="avatar-btn p-3 bg-cyber-dark border border-cyber-border rounded-xl text-2xl hover:scale-105 transition flex items-center justify-center cursor-pointer shadow">🧠</button>
+                                <button type="button" onclick="selectAvatar('🚀')" class="avatar-btn p-3 bg-cyber-dark border border-cyber-border rounded-xl text-2xl hover:scale-105 transition flex items-center justify-center cursor-pointer shadow">🚀</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="startGame()" class="w-full py-4 rounded-2xl cyber-gradient text-cyber-dark font-black text-base shadow-xl shadow-cyan-500/30 hover:opacity-95 transition transform active:scale-98 cursor-pointer flex items-center justify-center gap-3">
+                        <span>INICIAR MISIÓN EDUCATIVA</span> <i class="fa-solid fa-arrow-right-long text-lg"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- VISTA PRINCIPAL DEL JUEGO (OCULTA AL INICIO) -->
+            <section id="view-game" class="hidden flex-1 flex flex-col gap-6 fade-in">
+
+                <!-- NAVIGATION TABS -->
+                <div class="flex flex-wrap items-center justify-between glass-panel border border-cyber-border p-2 rounded-xl gap-2">
+                    <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                        <button onclick="switchTab('missions')" id="tab-btn-missions" class="flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold bg-cyan-500 text-cyber-dark transition flex items-center justify-center gap-2 shadow">
+                            <i class="fa-solid fa-map-location-dot"></i> Distritos (Misiones)
+                        </button>
+                        <button onclick="switchTab('pet')" id="tab-btn-pet" class="flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-robot"></i> Chronobook
+                        </button>
+                        <button onclick="switchTab('focus')" id="tab-btn-focus" class="flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-stopwatch"></i> Pomodoro
+                        </button>
+                        <button onclick="switchTab('shop')" id="tab-btn-shop" class="flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-store"></i> Tienda
+                        </button>
+                        <button onclick="switchTab('achievements')" id="tab-btn-achievements" class="flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-trophy"></i> Logros
+                        </button>
+                    </div>
+
+                    <button onclick="openNewMissionModal()" class="w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 text-cyber-dark font-extrabold px-4 py-2.5 rounded-lg text-xs md:text-sm shadow-lg shadow-emerald-500/20 hover:opacity-90 transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-plus"></i> Nueva Misión
+                    </button>
+                </div>
+
+                <!-- TAB CONTENT: MISSIONS -->
+                <div id="tab-missions" class="tab-content flex-1 flex flex-col gap-6">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="glass-panel border border-cyber-border p-4 rounded-2xl flex items-center justify-between shadow-lg">
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Total Misiones</p>
+                                <h3 id="stat-total" class="text-xl font-black text-white mt-1">0</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                                <i class="fa-solid fa-list-check"></i>
+                            </div>
+                        </div>
+                        <div class="glass-panel border border-cyber-border p-4 rounded-2xl flex items-center justify-between shadow-lg">
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Pendientes</p>
+                                <h3 id="stat-pending" class="text-xl font-black text-amber-400 mt-1">0</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                                <i class="fa-solid fa-hourglass-half"></i>
+                            </div>
+                        </div>
+                        <div class="glass-panel border border-cyber-border p-4 rounded-2xl flex items-center justify-between shadow-lg">
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Completadas</p>
+                                <h3 id="stat-completed" class="text-xl font-black text-emerald-400 mt-1">0</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                        </div>
+                        <div class="glass-panel border border-cyber-border p-4 rounded-2xl flex items-center justify-between shadow-lg">
+                            <div>
+                                <p class="text-xs text-slate-400 font-medium">Críticas / Vencidas</p>
+                                <h3 id="stat-critical" class="text-xl font-black text-rose-400 mt-1">0</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel border border-cyber-border rounded-2xl p-6 shadow-xl flex-1 flex flex-col">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-cyber-border gap-3">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bullseye text-cyan-400"></i> Distritos Escolares y Tareas
+                            </h3>
+                            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                <select id="filter-subject" onchange="renderMissions()" class="bg-cyber-dark border border-cyber-border rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-cyan-400">
+                                    <option value="all">Todas las Materias</option>
+                                    <option value="Matemáticas">Matemáticas</option>
+                                    <option value="Comunicación">Comunicación</option>
+                                    <option value="Ciencia y Tecnología">Ciencia y Tecnología</option>
+                                    <option value="DPCC">DPCC</option>
+                                    <option value="Historia">Historia</option>
+                                    <option value="Arte">Arte</option>
+                                </select>
+                                <select id="filter-status" onchange="renderMissions()" class="bg-cyber-dark border border-cyber-border rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-cyan-400">
+                                    <option value="all">Todos los Estados</option>
+                                    <option value="pending">Pendientes</option>
+                                    <option value="completed">Completadas</option>
+                                    <option value="critical">Críticas</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="missions-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 overflow-y-auto max-h-[500px]"></div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTENT: PET -->
+                <div id="tab-pet" class="tab-content hidden flex-1 flex flex-col items-center justify-center py-6">
+                    <div class="glass-panel border border-cyber-border rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl"></div>
+
+                        <div class="w-32 h-32 bg-cyan-500/10 border-2 border-cyan-400 rounded-3xl mx-auto flex items-center justify-center text-6xl mb-6 shadow-xl shadow-cyan-500/20 floating" id="pet-avatar-icon">
+                            🤖
+                        </div>
+
+                        <h3 id="pet-name-display" class="text-2xl font-black text-white mb-1">Chronobook v1.0</h3>
+                        <p id="pet-status-text" class="text-xs text-cyan-400 font-semibold mb-4 uppercase tracking-wider">Compañero de Enfoque Activo</p>
+
+                        <div class="bg-cyber-dark border border-cyber-border p-4 rounded-2xl mb-6 relative">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-cyber-card border border-cyber-border px-3 py-0.5 rounded-full text-[10px] text-slate-300 font-bold uppercase">
+                                Mensaje del Asistente
+                            </div>
+                            <p id="pet-quote" class="text-sm text-slate-300 italic pt-1">
+                                "¡Hola, estudiante! Mantén tus misiones al día para que la energía de la ciudad escolar siga brillando."
+                            </p>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-xs font-bold">
+                                <span class="text-slate-400">Nivel de Energía / Felicidad</span>
+                                <span id="pet-energy-text" class="text-emerald-400">85%</span>
+                            </div>
+                            <div class="w-full bg-cyber-dark h-3 rounded-full overflow-hidden border border-cyber-border">
+                                <div id="pet-energy-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-[85%] transition-all duration-500"></div>
+                            </div>
+                            <button onclick="feedPet()" class="w-full py-3 bg-cyber-dark border border-cyber-border hover:border-cyan-400 text-cyan-300 font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 mt-4 shadow cursor-pointer">
+                                <i class="fa-solid fa-battery-full text-emerald-400"></i> Dar Motivación Extra (Coste: 10 🪙)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTENT: FOCUS / POMODORO -->
+                <div id="tab-focus" class="tab-content hidden flex-1 flex flex-col items-center justify-center py-6">
+                    <div class="glass-panel border border-cyber-border rounded-3xl p-8 max-w-md w-full text-center shadow-2xl relative">
+                        <div class="w-16 h-16 bg-cyan-500/20 border border-cyan-400 rounded-2xl mx-auto flex items-center justify-center text-2xl text-cyan-400 mb-4 floating">
+                            <i class="fa-solid fa-stopwatch-20"></i>
+                        </div>
+                        <h3 class="text-xl font-extrabold text-white mb-1">Zona de Enfoque Cuántico</h3>
+                        <p class="text-xs text-slate-400 mb-6">Bloquea distracciones y gana +40 XP y +20 Chronocoins al completar tu ciclo.</p>
+
+                        <div class="text-6xl font-black text-white tracking-widest my-8 font-mono" id="timer-display">
+                            25:00
+                        </div>
+
+                        <div class="flex justify-center gap-3">
+                            <button onclick="startTimer()" id="btn-timer-start" class="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-cyber-dark font-extrabold rounded-xl text-xs transition shadow-lg shadow-cyan-500/25 cursor-pointer">
+                                <i class="fa-solid fa-play mr-2"></i> Iniciar
+                            </button>
+                            <button onclick="pauseTimer()" class="px-6 py-3 bg-cyber-dark border border-cyber-border hover:bg-cyber-border text-slate-300 font-bold rounded-xl text-xs transition cursor-pointer">
+                                <i class="fa-solid fa-pause mr-2"></i> Pausar
+                            </button>
+                            <button onclick="resetTimer()" class="px-6 py-3 bg-cyber-dark border border-cyber-border hover:bg-cyber-border text-rose-400 font-bold rounded-xl text-xs transition cursor-pointer">
+                                <i class="fa-solid fa-rotate-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTENT: SHOP -->
+                <div id="tab-shop" class="tab-content hidden flex-1 flex flex-col gap-6">
+                    <div class="glass-panel border border-cyber-border rounded-2xl p-6 shadow-xl">
+                        <div class="flex items-center justify-between pb-4 border-b border-cyber-border">
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-store text-amber-400"></i> Tienda de Recompensas y Títulos
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Canjea tus Chronocoins por títulos honoríficos exclusivos de la I.E. Viscardo y Guzmán.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4" id="shop-items-container"></div>
+                    </div>
+                </div>
+
+                <!-- TAB CONTENT: ACHIEVEMENTS -->
+                <div id="tab-achievements" class="tab-content hidden flex-1 flex flex-col gap-6">
+                    <div class="glass-panel border border-cyber-border rounded-2xl p-6 shadow-xl">
+                        <div class="flex items-center justify-between pb-4 border-b border-cyber-border">
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-trophy text-amber-400"></i> Logros y Medallas Desbloqueables
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Completa hitos escolares para ganar bonos masivos de XP y monedas.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4" id="achievements-container"></div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+
+        <footer class="text-center py-3 text-[11px] text-slate-500 border-t border-cyber-border relative z-10">
+            School City – Game Creator | Proyecto Educativo I.E. Juan Pablo Viscardo y Guzmán &copy; 2026
+        </footer>
+    </div>
+
+    <!-- NEW MISSION MODAL -->
+    <div id="modal-new-mission" class="fixed inset-0 bg-cyber-dark/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel border border-cyber-border rounded-3xl p-6 max-w-lg w-full shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-cyber-border mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-cyan-400"></i> Registrar Nueva Misión Escolar
+                </h3>
+                <button onclick="closeNewMissionModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="form-mission" onsubmit="handleCreateMission(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">Título de la Tarea / Misión</label>
+                    <input type="text" id="mission-title" required placeholder="Ej. Resolver guía de trigonometría" class="w-full bg-cyber-dark border border-cyber-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400 text-white">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">Materia / Distrito</label>
+                        <select id="mission-subject" class="w-full bg-cyber-dark border border-cyber-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400 text-slate-300">
+                            <option value="Matemáticas">Matemáticas</option>
+                            <option value="Comunicación">Comunicación</option>
+                            <option value="Ciencia y Tecnología">Ciencia y Tecnología</option>
+                            <option value="DPCC">DPCC</option>
+                            <option value="Historia">Historia</option>
+                            <option value="Arte">Arte</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">Prioridad</label>
+                        <select id="mission-priority" class="w-full bg-cyber-dark border border-cyber-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400 text-slate-300">
+                            <option value="normal">Normal (+25 XP)</option>
+                            <option value="alta">Alta / Urgente (+50 XP)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">Fecha Límite</label>
+                    <input type="date" id="mission-date" required class="w-full bg-cyber-dark border border-cyber-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400 text-white">
+                </div>
+
+                <div class="pt-2 flex gap-3">
+                    <button type="button" onclick="closeNewMissionModal()" class="flex-1 py-3 bg-cyber-dark border border-cyber-border text-slate-300 font-bold rounded-xl text-sm hover:bg-cyber-border transition cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 py-3 cyber-gradient text-cyber-dark font-extrabold rounded-xl text-sm shadow-lg shadow-cyan-500/20 hover:opacity-95 transition cursor-pointer">
+                        Guardar Misión
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        for(let i=0; i<45; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2 + 1,
+                color: Math.random() > 0.5 ? 'rgba(6, 182, 212, 0.4)' : 'rgba(99, 102, 241, 0.4)',
+                speedX: (Math.random() - 0.5) * 0.4,
+                speedY: (Math.random() - 0.5) * 0.4
+            });
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                if(p.x < 0) p.x = canvas.width;
+                if(p.x > canvas.width) p.x = 0;
+                if(p.y < 0) p.y = canvas.height;
+                if(p.y > canvas.height) p.y = 0;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        let player = JSON.parse(localStorage.getItem('schoolCity_player')) || {
+            name: '',
+            avatar: '🛡️',
+            level: 1,
+            xp: 0,
+            maxXp: 100,
+            coins: 120,
+            streak: 3,
+            rank: 'Estudiante Novato',
+            petEnergy: 85
+        };
+
+        let missions = JSON.parse(localStorage.getItem('schoolCity_missions')) || [
+            { id: 1, title: 'Informe de las Leyes de Newton', subject: 'Ciencia y Tecnología', priority: 'alta', date: '2026-10-12', status: 'pending', xp: 50, coins: 25 },
+            { id: 2, title: 'Ensayo sobre Identidad Regional', subject: 'Comunicación', priority: 'normal', date: '2026-10-15', status: 'pending', xp: 25, coins: 15 },
+            { id: 3, title: 'Práctica de Ecuaciones Cuadráticas', subject: 'Matemáticas', priority: 'alta', date: '2026-09-20', status: 'critical', xp: 50, coins: 25 }
+        ];
+
+        let shopItems = JSON.parse(localStorage.getItem('schoolCity_shop')) || [
+            { id: 1, name: 'Título: Guardián del Tiempo', type: 'title', price: 90, unlocked: false, value: 'Guardián del Tiempo' },
+            { id: 2, name: 'Título: Maestro Viscardino', type: 'title', price: 180, unlocked: false, value: 'Maestro Viscardino' },
+            { id: 3, name: 'Título: Leyenda de School City', type: 'title', price: 300, unlocked: false, value: 'Leyenda de School City' }
+        ];
+
+        let achievements = JSON.parse(localStorage.getItem('schoolCity_achievements')) || [
+            { id: 1, title: 'Primer Paso', desc: 'Completa tu primera misión escolar', reward: 50, unlocked: false, icon: 'fa-shoe-prints' },
+            { id: 2, title: 'Racha de Fuego', desc: 'Mantén una racha de 3 días activos', reward: 80, unlocked: true, icon: 'fa-fire' },
+            { id: 3, title: 'Cerebro de Acero', desc: 'Completa 2 sesiones de Pomodoro', reward: 100, unlocked: false, icon: 'fa-brain' }
+        ];
+
+        let timerInterval = null;
+        let timeLeft = 25 * 60;
+        let isTimerRunning = false;
+
+        window.onload = function() {
+            if (player.name) {
+                document.getElementById('input-player-name').value = player.name;
+                showGameView();
+            }
+            updateHUD();
+            renderMissions();
+            renderShop();
+            renderAchievements();
+            updatePetDisplay();
+            
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('mission-date');
+            if(dateInput) dateInput.min = today;
+        };
+
+        function selectAvatar(emoji) {
+            player.avatar = emoji;
+            document.querySelectorAll('.avatar-btn').forEach(btn => {
+                btn.classList.remove('border-cyan-400', 'bg-cyan-500/15');
+                btn.classList.add('border-cyber-border');
+                if(btn.textContent.trim() === emoji) {
+                    btn.classList.add('border-cyan-400', 'bg-cyan-500/15');
+                }
+            });
+        }
+
+        function startGame() {
+            const nameInput = document.getElementById('input-player-name').value.trim();
+            if(!nameInput) {
+                showToast('Por favor ingresa tu nombre de estudiante.', 'warning');
+                return;
+            }
+            player.name = nameInput;
+            saveGame();
+            showGameView();
+            showToast(`¡Bienvenido a School City, ${player.name}!`, 'success');
+        }
+
+        function showGameView() {
+            document.getElementById('view-start').classList.add('hidden');
+            document.getElementById('main-header').classList.remove('hidden');
+            document.getElementById('main-header').classList.add('flex');
+            document.getElementById('view-game').classList.remove('hidden');
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-name').textContent = player.name || 'Estudiante';
+            document.getElementById('hud-avatar').textContent = player.avatar || '🛡️';
+            document.getElementById('hud-rank').textContent = player.rank;
+            document.getElementById('hud-level').textContent = player.level;
+            document.getElementById('hud-xp-text').textContent = `${player.xp}/${player.maxXp} XP`;
+            document.getElementById('hud-coins').textContent = player.coins;
+            document.getElementById('hud-streak').textContent = `${player.streak} días`;
+
+            const xpPercentage = Math.min(100, (player.xp / player.maxXp) * 100);
+            document.getElementById('hud-xp-bar').style.width = `${xpPercentage}%`;
+        }
+
+        function saveGame() {
+            localStorage.setItem('schoolCity_player', JSON.stringify(player));
+            localStorage.setItem('schoolCity_missions', JSON.stringify(missions));
+            localStorage.setItem('schoolCity_shop', JSON.stringify(shopItems));
+            localStorage.setItem('schoolCity_achievements', JSON.stringify(achievements));
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            ['missions', 'pet', 'focus', 'shop', 'achievements'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if(t === tabName) {
+                    btn.className = "flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold bg-cyan-500 text-cyber-dark transition flex items-center justify-center gap-2 shadow";
+                } else {
+                    btn.className = "flex-1 md:flex-none px-4 py-2.5 rounded-lg text-xs md:text-sm font-bold text-slate-400 hover:text-white transition flex items-center justify-center gap-2";
+                }
+            });
+        }
+
+        function openNewMissionModal() {
+            document.getElementById('modal-new-mission').classList.remove('hidden');
+        }
+
+        function closeNewMissionModal() {
+            document.getElementById('modal-new-mission').classList.add('hidden');
+            document.getElementById('form-mission').reset();
+        }
+
+        function handleCreateMission(e) {
+            e.preventDefault();
+            const title = document.getElementById('mission-title').value;
+            const subject = document.getElementById('mission-subject').value;
+            const priority = document.getElementById('mission-priority').value;
+            const date = document.getElementById('mission-date').value;
+
+            const isHigh = priority === 'alta';
+            const newMission = {
+                id: Date.now(),
+                title,
+                subject,
+                priority,
+                date,
+                status: 'pending',
+                xp: isHigh ? 50 : 25,
+                coins: isHigh ? 25 : 15
+            };
+
+            missions.push(newMission);
+            saveGame();
+            renderMissions();
+            closeNewMissionModal();
+            showToast('¡Nueva misión registrada con éxito!', 'success');
+        }
+
+        function completeMission(id) {
+            const m = missions.find(item => item.id === id);
+            if(!m || m.status === 'completed') return;
+
+            m.status = 'completed';
+            player.xp += m.xp;
+            player.coins += m.coins;
+            player.petEnergy = Math.min(100, player.petEnergy + 10);
+
+            const ach = achievements.find(a => a.id === 1);
+            if(ach && !ach.unlocked) {
+                ach.unlocked = true;
+                player.coins += ach.reward;
+                showToast(`¡Logro desbloqueado: ${ach.title}! +${ach.reward} 🪙`, 'success');
+            }
+
+            if(player.xp >= player.maxXp) {
+                player.level += 1;
+                player.xp -= player.maxXp;
+                player.maxXp = Math.floor(player.maxXp * 1.35);
+                
+                if(player.level >= 3 && player.level < 5) {
+                    player.rank = 'Guardián del Tiempo';
+                } else if(player.level >= 5) {
+                    player.rank = 'Leyenda Viscardina';
+                }
+                showToast(`¡SUBISTE DE NIVEL! Ahora eres Nivel ${player.level}`, 'success');
+            }
+
+            saveGame();
+            updateHUD();
+            renderMissions();
+            updatePetDisplay();
+            renderAchievements();
+            showToast(`¡Misión cumplida! +${m.xp} XP y +${m.coins} 🪙`, 'success');
+        }
+
+        function deleteMission(id) {
+            missions = missions.filter(item => item.id !== id);
+            saveGame();
+            renderMissions();
+            showToast('Misión eliminada.', 'warning');
+        }
+
+        function renderMissions() {
+            const container = document.getElementById('missions-container');
+            const filterSub = document.getElementById('filter-subject').value;
+            const filterStat = document.getElementById('filter-status').value;
+            container.innerHTML = '';
+
+            let total = missions.length;
+            let pending = 0;
+            let completed = 0;
+            let critical = 0;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const filtered = missions.filter(m => {
+                if(m.status === 'pending') {
+                    if(m.date < todayStr) m.status = 'critical';
+                }
+                if(m.status === 'pending') pending++;
+                if(m.status === 'completed') completed++;
+                if(m.status === 'critical') critical++;
+
+                if(filterSub !== 'all' && m.subject !== filterSub) return false;
+                if(filterStat !== 'all' && m.status !== filterStat) return false;
+                return true;
+            });
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-pending').textContent = pending;
+            document.getElementById('stat-completed').textContent = completed;
+            document.getElementById('stat-critical').textContent = critical;
+
+            if(filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-500 text-sm">
+                        <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                        <p>No hay misiones registradas bajo estos filtros.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(m => {
+                let badgeColor = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30';
+                let statusText = 'Pendiente';
+                let statusColor = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
+
+                if(m.status === 'completed') {
+                    statusText = 'Completada';
+                    statusColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+                } else if(m.status === 'critical') {
+                    statusText = 'Crítico (Vencida)';
+                    statusColor = 'text-rose-400 bg-rose-500/10 border-rose-500/30 animate-pulse';
+                }
+
+                const card = document.createElement('div');
+                card.className = `bg-cyber-dark border border-cyber-border rounded-2xl p-4 flex flex-col justify-between gap-3 relative overflow-hidden transition hover:border-cyan-500/50`;
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${badgeColor} mb-2">${m.subject}</span>
+                            <h4 class="text-sm font-bold text-white leading-snug">${m.title}</h4>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusColor}">${statusText}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-cyber-border/60">
+                        <div class="flex items-center gap-3">
+                            <span><i class="fa-regular fa-calendar mr-1"></i> ${m.date}</span>
+                            <span class="text-indigo-300 font-semibold">+${m.xp} XP</span>
+                            <span class="text-amber-300 font-semibold">+${m.coins} 🪙</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            ${m.status !== 'completed' ? `
+                                <button onclick="completeMission(${m.id})" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 rounded-lg font-bold transition text-xs flex items-center gap-1 cursor-pointer">
+                                    <i class="fa-solid fa-check"></i> Cumplir
+                                </button>
+                            ` : ''}
+                            <button onclick="deleteMission(${m.id})" class="p-1.5 text-slate-500 hover:text-rose-400 transition cursor-pointer">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updatePetDisplay() {
+            document.getElementById('pet-energy-bar').style.width = `${player.petEnergy}%`;
+            document.getElementById('pet-energy-text').textContent = `${player.petEnergy}%`;
+
+            const quotes = [
+                "¡Excelente trabajo organizando tus tareas en School City!",
+                "Recuerda revisar tus distritos de Matemáticas y Ciencia hoy.",
+                "¡La constancia es la llave del éxito en la I.E. Viscardo y Guzmán!",
+                "Un estudiante organizado siempre llega más lejos. ¡Tú puedes!"
+            ];
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('pet-quote').textContent = `"${randomQuote}"`;
+        }
+
+        function feedPet() {
+            if(player.coins < 10) {
+                showToast('No tienes suficientes Chronocoins (Necesitas 10 🪙).', 'warning');
+                return;
+            }
+            player.coins -= 10;
+            player.petEnergy = Math.min(100, player.petEnergy + 25);
+            saveGame();
+            updateHUD();
+            updatePetDisplay();
+            showToast('¡Chronobook ha recuperado energía y te envía un consejo motivador!', 'success');
+        }
+
+        function startTimer() {
+            if(isTimerRunning) return;
+            isTimerRunning = true;
+            document.getElementById('btn-timer-start').classList.add('opacity-50');
+
+            timerInterval = setInterval(() => {
+                if(timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    document.getElementById('btn-timer-start').classList.remove('opacity-50');
+                    player.xp += 40;
+                    player.coins += 20;
+
+                    const ach = achievements.find(a => a.id === 3);
+                    if(ach && !ach.unlocked) {
+                        ach.unlocked = true;
+                        player.coins += ach.reward;
+                        showToast(`¡Logro desbloqueado: ${ach.title}! +${ach.reward} 🪙`, 'success');
+                    }
+
+                    saveGame();
+                    updateHUD();
+                    renderAchievements();
+                    showToast('¡Sesión Pomodoro completada! +40 XP y +20 🪙', 'success');
+                    timeLeft = 25 * 60;
+                    updateTimerDisplay();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('btn-timer-start').classList.remove('opacity-50');
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('btn-timer-start').classList.remove('opacity-50');
+            timeLeft = 25 * 60;
+            updateTimerDisplay();
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timer-display').textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = '';
+
+            shopItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-cyber-dark border border-cyber-border rounded-2xl p-4 flex flex-col justify-between gap-3";
+                card.innerHTML = `
+                    <div>
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">${item.name}</h4>
+                        <p class="text-xs text-slate-400">Canjea este título exclusivo para destacar en tu perfil escolar.</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-cyber-border">
+                        <span class="text-amber-300 font-bold text-xs"><i class="fa-solid fa-coins mr-1"></i> ${item.price} 🪙</span>
+                        <button onclick="buyShopItem(${item.id})" class="px-3 py-1.5 ${item.unlocked ? 'bg-cyber-border text-slate-400 cursor-not-allowed' : 'cyber-gradient text-cyber-dark font-extrabold hover:opacity-90 cursor-pointer'} rounded-lg text-xs transition">
+                            ${item.unlocked ? 'Desbloqueado' : 'Canjear'}
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function buyShopItem(id) {
+            const item = shopItems.find(i => i.id === id);
+            if(!item || item.unlocked) return;
+
+            if(player.coins < item.price) {
+                showToast('No tienes suficientes Chronocoins.', 'warning');
+                return;
+            }
+
+            player.coins -= item.price;
+            item.unlocked = true;
+
+            if(item.type === 'title') {
+                player.rank = item.value;
+            }
+
+            saveGame();
+            updateHUD();
+            renderShop();
+            showToast(`¡Has desbloqueado: ${item.name}!`, 'success');
+        }
+
+        function renderAchievements() {
+            const container = document.getElementById('achievements-container');
+            container.innerHTML = '';
+
+            achievements.forEach(ach => {
+                const card = document.createElement('div');
+                card.className = `bg-cyber-dark border ${ach.unlocked ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-cyber-border'} rounded-2xl p-4 flex flex-col justify-between gap-3`;
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-xl ${ach.unlocked ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500'} flex items-center justify-center">
+                                <i class="fa-solid ${ach.icon}"></i>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${ach.unlocked ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-slate-400 bg-cyber-border border-cyber-border'}">
+                                ${ach.unlocked ? 'Completado' : 'Bloqueado'}
+                            </span>
+                        </div>
+                        <h4 class="text-sm font-bold text-white mb-1">${ach.title}</h4>
+                        <p class="text-xs text-slate-400">${ach.desc}</p>
+                    </div>
+                    <div class="pt-3 border-t border-cyber-border flex items-center justify-between text-xs">
+                        <span class="text-slate-500">Recompensa</span>
+                        <span class="text-amber-300 font-bold">+${ach.reward} 🪙</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-cyan-500 text-cyber-dark';
+            let icon = 'fa-circle-check';
+            if(type === 'warning') {
+                bgClass = 'bg-amber-500 text-cyber-dark';
+                icon = 'fa-triangle-exclamation';
+            } else if(type === 'success') {
+                bgClass = 'bg-emerald-500 text-cyber-dark';
+                icon = 'fa-circle-check';
+            }
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl font-extrabold text-xs flex items-center gap-3 shadow-2xl pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
